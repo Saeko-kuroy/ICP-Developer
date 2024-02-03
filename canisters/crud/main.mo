@@ -5,71 +5,77 @@ import Nat32 "mo:base/Nat32";
 import Text "mo:base/Text";
 import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
+import Nat8 "mo:base/Nat8";
 
-actor PostCrud {
+actor ProdCrud {
 
-	type PostId = Nat32;
-	type Post = {
-		creator: Principal;
-		message: Text;
+	type ProdId = Nat32;
+	type Materials = {
+		materialName: Text;
+		materialQty: Nat8;
+	};
+	type Prod = {
+		user: Principal;
+		name: Text;
+		materials: [Materials];
 	};
 
-	stable var postId: PostId = 0;
-	let postList = HashMap.HashMap<Text, Post>(0, Text.equal, Text.hash);
+	stable var prodId: ProdId = 0;
+	let prodList = HashMap.HashMap<Text, Prod>(0, Text.equal, Text.hash);
 
 	private func generateTaskId() : Nat32 {
-		postId += 1;
-		return postId;
+		prodId += 1;
+		return prodId;
 	};
 
-	public shared (msg) func createPost(message: Text) : async () {
+	public shared (msg) func createProd(name: Text, materials: [Materials]) : async () {
 		let user: Principal = msg.caller;
-		let post = {creator=user; message=message};
+		let prod : Prod = {user=user; name=name; materials=materials;};
 
-		postList.put(Nat32.toText(generateTaskId()), post);
-		Debug.print("New post created! ID: " # Nat32.toText(postId));
+		prodList.put(Nat32.toText(generateTaskId()), prod);
+		Debug.print("New product created! ID: " # Nat32.toText(prodId));
 		return ();
 	};
 
-	public query func getPosts () : async [(Text, Post)] {
-		let postIter : Iter.Iter<(Text, Post)> = postList.entries();
-		let postArray : [(Text, Post)] = Iter.toArray(postIter);
+	public query func getProds () : async [(Text, Prod)] {
+		let prodIter : Iter.Iter<(Text, Prod)> = prodList.entries();
+		let prodArray : [(Text, Prod)] = Iter.toArray(prodIter);
 
-		return postArray;
+		return prodArray;
 	};
 
-	public query func getPost (id: Text) : async ?Post {
-		let post: ?Post = postList.get(id);
-		return post;
+	public query func getProd (id: Text) : async ?Prod {
+		let prod: ?Prod = prodList.get(id);
+		return prod;
 	};
 
-	public shared (msg) func updatePost (id: Text, message: Text) : async Bool {
+	public shared (msg) func updateProd (id: Text, name: Text, materials: [Materials]) : async Bool {
 		let user: Principal = msg.caller;
-		let post: ?Post = postList.get(id);
+		let prod: ?Prod = prodList.get(id);
 
-		switch (post) {
+		switch (prod) {
 			case (null) {
 				return false;
 			};
-			case (?currentPost) {
-				let newPost: Post = {creator=user; message=message};
-				postList.put(id, newPost);
-				Debug.print("Updated post with ID: " # id);
+			case (?currentProd) {
+				let newProd: Prod = {user=user; name=name; materials=materials;};
+				prodList.put(id, newProd);
+				Debug.print("Updated product with ID: " # id);
 				return true;
 			};
 		};
 
 	};
 
-	public func deletePost (id: Text) : async Bool {
-		let post : ?Post = postList.get(id);
-		switch (post) {
+	public func deleteProd (id: Text) : async Bool {
+		let prod : ?Prod = prodList.get(id);
+		switch (prod) {
 			case (null) {
 				return false;
 			};
 			case (_) {
-				ignore postList.remove(id);
-				Debug.print("Delete post with ID: " # id);
+				ignore prodList.remove(id);
+				Debug.print("Delete product with ID: " # id);
 				return true;
 			};
 		};
