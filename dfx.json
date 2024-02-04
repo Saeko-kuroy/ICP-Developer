@@ -1,9 +1,5 @@
 {
   "canisters": {
-    "social": {
-      "main": "canisters/social/main.mo",
-      "type": "motoko"
-    },
     "crud": {
       "main": "canisters/crud/main.mo",
       "type": "motoko"

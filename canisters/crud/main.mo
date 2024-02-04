@@ -8,50 +8,51 @@ import Debug "mo:base/Debug";
 import Nat8 "mo:base/Nat8";
 
 actor ProdCrud {
-
-	type ProdId = Nat32;
-	type Materials = {
-		materialName: Text;
-		materialQty: Nat8;
+	//Material class definition
+	type Material = {
+		name: Text;
+		partnum: Text;
+		qty: Nat8;
 	};
+	//Product class definition
 	type Prod = {
 		user: Principal;
 		name: Text;
-		materials: [Materials];
+		materials: [Material];
 	};
-
-	stable var prodId: ProdId = 0;
+	//Product list storage
 	let prodList = HashMap.HashMap<Text, Prod>(0, Text.equal, Text.hash);
-
-	private func generateTaskId() : Nat32 {
-		prodId += 1;
-		return prodId;
-	};
-
-	public shared (msg) func createProd(name: Text, materials: [Materials]) : async () {
+	
+	//Creates a product and store it in a HashMap with the Part Number as a key. The product is confonformed by it's name and an array of materials 
+	public shared (msg) func createProd(name: Text, materials: [Material], partNumber: Text) : async () {
 		let user: Principal = msg.caller;
 		let prod : Prod = {user=user; name=name; materials=materials;};
 
-		prodList.put(Nat32.toText(generateTaskId()), prod);
-		Debug.print("New product created! ID: " # Nat32.toText(prodId));
+		prodList.put(partNumber, prod);
+		Debug.print("New product created! Part number: " # partNumber);
 		return ();
 	};
-
+	//Creates an array of products
 	public query func getProds () : async [(Text, Prod)] {
 		let prodIter : Iter.Iter<(Text, Prod)> = prodList.entries();
 		let prodArray : [(Text, Prod)] = Iter.toArray(prodIter);
-
 		return prodArray;
 	};
-
-	public query func getProd (id: Text) : async ?Prod {
-		let prod: ?Prod = prodList.get(id);
+	//Creates an array of product part numbers
+    public query func getPartNumbers () : async [Text] {
+		let prodIter : Iter.Iter<Text> = prodList.keys();
+		let prodArray : [Text] = Iter.toArray(prodIter);
+		return prodArray;
+	};
+	//Creates an array of products
+	public query func getProd (pn: Text) : async ?Prod {
+		let prod: ?Prod = prodList.get(pn);
 		return prod;
 	};
-
-	public shared (msg) func updateProd (id: Text, name: Text, materials: [Materials]) : async Bool {
+	//Upgrades a product
+	public shared (msg) func updateProd (pn: Text, name: Text, materials: [Material]) : async Bool {
 		let user: Principal = msg.caller;
-		let prod: ?Prod = prodList.get(id);
+		let prod: ?Prod = prodList.get(pn);
 
 		switch (prod) {
 			case (null) {
@@ -59,23 +60,23 @@ actor ProdCrud {
 			};
 			case (?currentProd) {
 				let newProd: Prod = {user=user; name=name; materials=materials;};
-				prodList.put(id, newProd);
-				Debug.print("Updated product with ID: " # id);
+				prodList.put(pn, newProd);
+				Debug.print("Updated product with ID: " # pn);
 				return true;
 			};
 		};
 
 	};
-
-	public func deleteProd (id: Text) : async Bool {
-		let prod : ?Prod = prodList.get(id);
+	//Delets a product
+	public func deleteProd (pn: Text) : async Bool {
+		let prod : ?Prod = prodList.get(pn);
 		switch (prod) {
 			case (null) {
 				return false;
 			};
 			case (_) {
-				ignore prodList.remove(id);
-				Debug.print("Delete product with ID: " # id);
+				ignore prodList.remove(pn);
+				Debug.print("Delete product with ID: " # pn);
 				return true;
 			};
 		};
